@@ -1,0 +1,66 @@
+import 'dotenv/config';
+import http from 'http';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import jwt from 'jsonwebtoken';
+import { Server } from 'socket.io';
+
+import connectDB from './config/db.js';
+import { notFound, errorHandler } from './middleware/error.js';
+import Conversation from './models/Conversation.js';
+import authRoutes from './routes/auth.js';
+import listingRoutes from './routes/listings.js';
+import requestRoutes from './routes/requests.js';
+import messageRoutes from './routes/messages.js';
+import userRoutes from './routes/users.js';
+import adminRoutes from './routes/admin.js';
+
+await connectDB();
+
+const app = express();
+const server = http.createServer(app);
+const origin = process.env.CLIENT_URL || 'http://localhost:5173';
+
+// ---- Socket.io: real-time chat
+const io = new Server(server, { cors: { origin } });
+app.set('io', io);
+
+io.use((socket, next) => {
+  try {
+    const { id } = jwt.verify(socket.handshake.auth.token, process.env.JWT_SECRET);
+    socket.userId = id;
+    next();
+  } catch {
+    next(new Error('Unauthorized'));
+  }
+});
+
+io.on('connection', (socket) => {
+  // client asks to join a conversation room; we check they belong to it
+  socket.on('conversation:join', async (conversationId) => {
+    const ok = await Conversation.exists({ _id: conversationId, participants: socket.userId });
+    if (ok) socket.join(`conv:${conversationId}`);
+  });
+});
+
+// ---- Express
+app.use(helmet());
+app.use(cors({ origin }));
+app.use(express.json());
+app.use(morgan('dev'));
+
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.use('/api/auth', authRoutes);
+app.use('/api/listings', listingRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+
+app.use(notFound);
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

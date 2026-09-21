@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-navy: #0f2d55;
+  --color-navy-soft: #1c447a;
+  --color-sky: #e8f0fb;
+  --color-leaf: #2f8f5b;
+  --color-ink: #16202e;
+  --color-mist: #f5f7fa;
+}
+
+body { @apply bg-mist text-ink font-sans antialiased; }
+
+.btn-primary { @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy bg-navy text-white hover:bg-navy-soft; }
+.btn-outline { @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy border border-navy text-navy bg-white hover:bg-sky; }
+.input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-navy focus:outline-2 focus:outline-navy/30; }
+.label { @apply mb-1 block text-sm font-medium text-slate-700; }
+.card { @apply rounded-xl bg-white border border-slate-200; }
