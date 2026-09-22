@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
-import { errMsg } from '../api.js';
+import { supabase } from '../supabaseClient';
 
 const YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
 
 export default function Register() {
-  const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     fullName: '', studentId: '', email: '', program: '', yearLevel: YEARS[0], password: '', confirmPassword: '',
@@ -17,13 +15,35 @@ export default function Register() {
 
   const submit = async (e) => {
     e.preventDefault();
-    setBusy(true);
     setError('');
+
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setBusy(true);
+
     try {
-      await register(form);
+      // Create user directly in Supabase Auth with custom user metadata
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            full_name: form.fullName,
+            student_id: form.studentId,
+            program: form.program,
+            year_level: form.yearLevel,
+          },
+        },
+      });
+
+      if (signUpError) throw signUpError;
+
       navigate('/');
     } catch (err) {
-      setError(errMsg(err));
+      setError(err.message || 'Failed to create account');
     } finally {
       setBusy(false);
     }
