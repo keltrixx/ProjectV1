@@ -1,45 +1,16 @@
-import { Route, Routes, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
-import Home from './pages/Home.jsx';
-import Login from './pages/Login.jsx';
-import Register from './pages/Register.jsx';
-import Browse from './pages/Browse.jsx';
-import ListingDetails from './pages/ListingDetails.jsx';
-import Sell from './pages/Sell.jsx';
-import Messages from './pages/Messages.jsx';
-import Profile from './pages/Profile.jsx';
-import Admin from './pages/Admin.jsx';
-import Splash from './pages/Splash.jsx';
-import { useAuth } from './context/AuthContext.jsx';
+import { useEffect } from 'react';
+import { supabase } from './supabaseClient'; // adjust path if needed
 
-export default function App() {
-  const { user } = useAuth();
+useEffect(() => {
+  async function testConnection() {
+    const { data, error } = await supabase.from('your_table_name').select('count', { count: 'exact' });
+    
+    if (error) {
+      console.error('Supabase Connection Error:', error.message);
+    } else {
+      console.log('Successfully connected to Supabase!', data);
+    }
+  }
 
-  return (
-    <>
-      <Navbar />
-      <main className="mx-auto max-w-6xl px-4 pb-20 pt-6 md:pb-10">
-        <Routes>
-          <Route 
-            path="/" 
-            element={user ? <Navigate to="/home" replace /> : <Splash />} 
-          />
-          <Route 
-            path="/home" 
-            element={<ProtectedRoute><Home /></ProtectedRoute>} 
-          />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/browse" element={<Browse />} />
-          <Route path="/listings/:id" element={<ListingDetails />} />
-          <Route path="/sell" element={<ProtectedRoute><Sell /></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute admin><Admin /></ProtectedRoute>} />
-          <Route path="*" element={<p className="py-20 text-center text-slate-500">Page not found.</p>} />
-        </Routes>
-      </main>
-    </>
-  );
-}
+  testConnection();
+}, []);
