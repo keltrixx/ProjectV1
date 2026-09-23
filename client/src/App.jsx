@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Home from './pages/Home.jsx';
@@ -10,15 +10,25 @@ import Sell from './pages/Sell.jsx';
 import Messages from './pages/Messages.jsx';
 import Profile from './pages/Profile.jsx';
 import Admin from './pages/Admin.jsx';
+import Splash from './pages/Splash.jsx';
+import { useAuth } from './context/AuthContext.jsx';
 
 export default function App() {
+  const { user } = useAuth();
+
   return (
     <>
       <Navbar />
-      {/* pb-20 keeps content clear of the mobile bottom bar */}
       <main className="mx-auto max-w-6xl px-4 pb-20 pt-6 md:pb-10">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route 
+            path="/" 
+            element={user ? <Navigate to="/home" replace /> : <Splash />} 
+          />
+          <Route 
+            path="/home" 
+            element={<ProtectedRoute><Home /></ProtectedRoute>} 
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/browse" element={<Browse />} />
