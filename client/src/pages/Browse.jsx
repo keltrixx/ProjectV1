@@ -5,7 +5,7 @@ import ListingCard from '../components/ListingCard.jsx';
 
 const CATEGORIES = ['Uniform Shirt', 'Pants / Skirt', 'PE Uniform', 'Accessories'];
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair'];
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
 export default function Browse() {
   const [params, setParams] = useSearchParams();
