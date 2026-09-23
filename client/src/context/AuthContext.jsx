@@ -8,26 +8,57 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // restore session on page load
+  // Restore session on page load
   useEffect(() => {
-    if (!localStorage.getItem('token')) return setLoading(false);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     api.get('/auth/me')
       .then((res) => setUser(res.data))
-      .catch(() => localStorage.removeItem('token'))
+      .catch(() => {
+        localStorage.removeItem('token');
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const saveSession = ({ token, user }) => {
-    localStorage.setItem('token', token);
+    if (token) localStorage.setItem('token', token);
     setUser(user);
   };
 
-  const login = async (email, password) => saveSession((await api.post('/auth/login', { email, password })).data);
-  const register = async (form) => saveSession((await api.post('/auth/register', form)).data);
+  const login = async (email, password) => {
+    const res = await api.post('/auth/login', { email, password });
+    saveSession(res.data);
+    return res.data;
+  };
+
+  const register = async (form) => {
+    const res = await api.post('/auth/register', form);
+    saveSession(res.data);
+    return res.data;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout, setUser }}>{children}</AuthContext.Provider>;
+  // Prevent white screen by displaying a fallback spinner/message during initial check
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-slate-500 font-medium">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout, setUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

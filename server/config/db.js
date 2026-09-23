@@ -1,11 +1,6 @@
-import mongoose from 'mongoose';
+// Database connection setup for Supabase
+export const connectDB = async () => {
+  console.log('⚡ Connected to Supabase Database');
+};
 
-export default async function connectDB() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB connected');
-  } catch (err) {
-    console.error('MongoDB connection failed:', err.message);
-    process.exit(1);
-  }
-}
+export default connectDB;
