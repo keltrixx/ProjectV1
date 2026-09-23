@@ -20,7 +20,7 @@ export default function Navbar() {
       {/* Top bar: always visible; holds the nav links on desktop */}
       <header className="sticky top-0 z-30 bg-navy">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-lg font-extrabold tracking-tight text-white">Uniform Exchange</Link>
+          <Link to="/" className="text-lg font-extrabold tracking-tight text-white">SUEPS</Link>
 
           <nav className="hidden gap-1 md:flex">
             {tabs.map((t) => <NavLink key={t.to} {...t} className={linkCls}>{t.label}</NavLink>)}
