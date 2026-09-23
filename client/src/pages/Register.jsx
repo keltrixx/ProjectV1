@@ -10,12 +10,14 @@ export default function Register() {
     fullName: '', studentId: '', email: '', program: '', yearLevel: YEARS[0], password: '', confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
+    setMessage('');
 
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
@@ -25,7 +27,6 @@ export default function Register() {
     setBusy(true);
 
     try {
-      // Create user directly in Supabase Auth with custom user metadata
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -41,7 +42,13 @@ export default function Register() {
 
       if (signUpError) throw signUpError;
 
-      navigate('/');
+      // Handle Supabase email confirmation check
+      if (data?.user && data?.session === null) {
+        setMessage('Registration successful! Please check your email to confirm your account before logging in.');
+      } else {
+        // If email confirmation is disabled in Supabase, redirect directly to login
+        navigate('/login');
+      }
     } catch (err) {
       setError(err.message || 'Failed to create account');
     } finally {
@@ -63,6 +70,8 @@ export default function Register() {
         <p className="text-sm text-slate-500">Join your school community.</p>
       </div>
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {message && <p role="status" className="rounded-lg bg-green-50 p-3 text-sm text-green-700">{message}</p>}
+      
       {field('fullName', 'Full name')}
       {field('studentId', 'Student ID')}
       {field('email', 'Email address', 'email')}
