@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import uniformImg from '../assets/uniforms.jpg';
 
 export default function Splash() {
   return (
@@ -31,7 +32,7 @@ export default function Splash() {
 
         <div className="relative flex justify-center lg:justify-end">
           <div className="card relative flex aspect-square w-full max-w-md flex-col items-center justify-center overflow-hidden bg-slate-50 p-6 shadow-inner">
-            <div className="absolute top-6 left-6 flex items-center gap-2 rounded-full border border-leaf/30 bg-leaf/10 px-3 py-1.5">
+            <div className="absolute top-6 left-6 z-10 flex items-center gap-2 rounded-full border border-leaf/30 bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm">
               <svg className="h-5 w-5 text-leaf" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4.083 9h11.834a1 1 0 011 1c0 5.523-4.254 10-9.5 10S1 15.523 1 10a1 1 0 011-1h2.083zm.167-2a5 5 0 019.5 0H4.25z" clipRule="evenodd" />
               </svg>
@@ -40,16 +41,12 @@ export default function Splash() {
               </span>
             </div>
 
-            <div className="mt-10 w-56 transform -rotate-2 rounded-lg bg-white p-4 shadow-xl border border-slate-200">
-              <div className="flex h-36 items-center justify-center rounded bg-sky/50 text-navy-soft">
-                <svg className="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-              </div>
-              <div className="mt-3 space-y-2">
-                <div className="h-3 w-3/4 rounded bg-slate-200"></div>
-                <div className="h-3 w-1/2 rounded bg-slate-100"></div>
-              </div>
+            <div className="mt-8 w-full h-72 rounded-xl overflow-hidden shadow-xl border border-slate-200">
+              <img
+                src={uniformImg}
+                alt="Stacked folded school uniforms"
+                className="w-full h-full object-cover object-center"
+              />
             </div>
           </div>
         </div>
