@@ -9,7 +9,6 @@ import { Server } from 'socket.io';
 
 import { UPLOAD_DIR } from './config/cloudinary.js';
 import { notFound, errorHandler } from './middleware/error.js';
-import { supabase } from './supabaseServer.js';
 import authRoutes from './routes/auth.js';
 import listingRoutes from './routes/listings.js';
 import requestRoutes from './routes/requests.js';
@@ -36,12 +35,8 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-  // client asks to join a conversation room; we check they belong to it
-  socket.on('conversation:join', async (conversationId) => {
-    const { data } = await supabase.from('conversations').select('id')
-      .eq('id', conversationId).contains('participants', [socket.userId]).maybeSingle();
-    if (data) socket.join(`conv:${conversationId}`);
-  });
+  // each user listens on a personal room, so new messages reach them whichever chat is open
+  socket.join(`user:${socket.userId}`);
 });
 
 // ---- Express

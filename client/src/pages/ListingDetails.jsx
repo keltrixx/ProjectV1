@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api, { errMsg } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { EmptyState } from '../components/Loader.jsx';
@@ -26,6 +26,7 @@ export default function ListingDetails() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [listing, setListing] = useState(null);
   const [active, setActive] = useState(0);
   const [option, setOption] = useState('Buy');
@@ -56,14 +57,22 @@ export default function ListingDetails() {
   const messageSeller = async () => {
     if (!user) return needLogin();
     try {
-      await api.post('/messages/conversations', { userId: listing.seller._id, listingId: id });
-      navigate('/messages');
+      const { data } = await api.post('/messages/conversations', { userId: listing.seller._id, listingId: id });
+      navigate(`/messages?c=${data._id}`);
     } catch (e) {
       setNotice({ type: 'error', text: errMsg(e) });
     }
   };
 
+  // go back if we came from inside the app, otherwise (direct link) fall back to Browse
+  const goBack = () => (location.key !== 'default' ? navigate(-1) : navigate('/browse'));
+
   return (
+    <div>
+    <button onClick={goBack}
+      className="mb-3 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-navy transition duration-200 hover:bg-sky active:scale-[0.97]">
+      ← Back
+    </button>
     <div className="grid gap-5 md:grid-cols-2 md:gap-6">
       <div>
         <div className="aspect-square overflow-hidden rounded-xl bg-sky shadow-lg shadow-navy/10">
@@ -134,6 +143,7 @@ export default function ListingDetails() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

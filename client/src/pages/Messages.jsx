@@ -1,56 +1,83 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api, { errMsg } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Messages() {
   const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const activeId = params.get('c'); // open chat lives in the URL (?c=<id>) so links and refresh work
   const [convos, setConvos] = useState([]);
-  const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const socketRef = useRef(null);
+  const activeRef = useRef(activeId);
   const bottomRef = useRef(null);
 
-  // one socket connection for the whole page
+  const setActiveId = (id) => setParams(id ? { c: id } : {});
+  const loadConvos = () => api.get('/messages/conversations').then((r) => setConvos(r.data)).catch((e) => setError(errMsg(e)));
+
+  const convosRef = useRef(convos);
+  useEffect(() => { activeRef.current = activeId; }, [activeId]);
+  useEffect(() => { convosRef.current = convos; }, [convos]);
+
+  // one socket connection for the whole page; the server sends every new message for us here
   useEffect(() => {
     const socket = io({ auth: { token: localStorage.getItem('token') } });
-    socketRef.current = socket;
     socket.on('message:new', (msg) => {
-      setMessages((prev) => (prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]));
+      if (msg.conversation === activeRef.current) {
+        setMessages((prev) => (prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]));
+      }
+      // brand-new chat started by someone else: reload the list to pick it up
+      if (!convosRef.current.some((c) => c._id === msg.conversation)) return loadConvos();
+      // otherwise bump that conversation to the top with its new preview
+      setConvos((prev) => {
+        const convo = prev.find((c) => c._id === msg.conversation);
+        const updated = { ...convo, lastMessage: msg.text || 'Sent a photo', lastMessageAt: msg.createdAt };
+        return [updated, ...prev.filter((c) => c._id !== msg.conversation)];
+      });
     });
     return () => socket.disconnect();
   }, []);
 
-  useEffect(() => {
-    api.get('/messages/conversations').then((r) => setConvos(r.data));
-  }, []);
+  useEffect(() => { loadConvos(); }, []);
 
-  // open a conversation: join its room + load history
+  // open a conversation: load its history
   useEffect(() => {
+    setMessages([]);
+    setError('');
     if (!activeId) return;
-    socketRef.current?.emit('conversation:join', activeId);
-    api.get(`/messages/conversations/${activeId}/messages`).then((r) => setMessages(r.data));
+    api.get(`/messages/conversations/${activeId}/messages`)
+      .then((r) => { if (activeRef.current === activeId) setMessages(r.data); })
+      .catch((e) => setError(errMsg(e)));
   }, [activeId]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages]);
+  // braces matter: newer browsers return a Promise from scrollIntoView, which React would treat as a cleanup
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const send = async (e, file) => {
     e?.preventDefault();
-    if (!text.trim() && !file) return;
+    if ((!text.trim() && !file) || sending) return;
+    setSending(true);
+    setError('');
     try {
       const body = new FormData();
-      body.append('text', text);
+      body.append('text', file ? '' : text);
       if (file) body.append('photo', file);
-      await api.post(`/messages/conversations/${activeId}/messages`, body);
-      setText('');
+      const { data } = await api.post(`/messages/conversations/${activeId}/messages`, body);
+      // show it right away even if the socket is slow or disconnected
+      setMessages((prev) => (prev.some((m) => m._id === data._id) ? prev : [...prev, data]));
+      if (!file) setText('');
     } catch (err) {
       setError(errMsg(err));
+    } finally {
+      setSending(false);
     }
   };
 
-  const other = (c) => c.participants.find((p) => p._id !== user._id);
+  const other = (c) => c?.participants.find((p) => p._id !== user._id);
   const active = convos.find((c) => c._id === activeId);
 
   return (
@@ -76,9 +103,17 @@ export default function Messages() {
           <>
             <div className="flex items-center gap-2 border-b border-slate-200 px-2 py-2 sm:gap-3 sm:p-4">
               <button className="rounded-lg px-3 py-2 text-sm font-medium text-navy active:bg-sky md:hidden" onClick={() => setActiveId(null)}>← Back</button>
-              <p className="truncate font-semibold">{other(active)?.fullName}</p>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{other(active)?.fullName}</p>
+                {active?.listing && (
+                  <Link to={`/listings/${active.listing._id}`} className="block truncate text-xs text-slate-500 hover:text-navy hover:underline">
+                    Re: {active.listing.title}
+                  </Link>
+                )}
+              </div>
             </div>
             <div className="scroll-thin flex-1 space-y-2 overflow-y-auto bg-mist p-4">
+              {messages.length === 0 && <p className="py-8 text-center text-sm text-slate-400">No messages yet. Say hi!</p>}
               {messages.map((m) => {
                 const mine = m.sender === user._id;
                 return (
@@ -96,10 +131,11 @@ export default function Messages() {
             <form onSubmit={send} className="flex items-center gap-2 border-t border-slate-200 p-2 sm:p-3">
               <label className="btn-outline shrink-0 cursor-pointer !px-3" aria-label="Attach photo">
                 Photo
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files[0] && send(null, e.target.files[0])} />
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files[0]; e.target.value = ''; if (f) send(null, f); }} />
               </label>
               <input className="input" placeholder="Type a message…" value={text} onChange={(e) => setText(e.target.value)} />
-              <button className="btn-primary shrink-0">Send</button>
+              <button className="btn-primary shrink-0" disabled={sending || !text.trim()}>Send</button>
             </form>
           </>
         )}

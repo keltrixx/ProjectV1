@@ -77,7 +77,7 @@ router.post('/conversations/:id/messages', upload.single('photo'), async (req, r
     check(await supabase.from('conversations')
       .update({ last_message: text || 'Sent a photo', last_message_at: new Date().toISOString() }).eq('id', convo.id));
 
-    req.app.get('io').to(`conv:${convo.id}`).emit('message:new', message);
+    req.app.get('io').to(convo.participants.map((p) => `user:${p}`)).emit('message:new', message);
     res.status(201).json(message);
   } catch (err) {
     next(err);
